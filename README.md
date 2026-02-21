@@ -6,7 +6,6 @@ A modern, full-stack Network Intrusion Detection System (IDS) that leverages Dee
 
 ## ✨ Features
 * **Real-time Analysis:** Input single CSV rows for instant binary classification.
-* **Bulk CSV Upload:** Process entire datasets to calculate attack/benign distribution percentages.
 * **Modern Dashboard:** A clean, minimalist UI with high-contrast visual indicators.
 * **Automated Normalization:** Built-in L2 normalization logic to ensure data matches training standards.
 * **Apache Integration:** Configuration files included for professional deployment on Linux/Ubuntu.
