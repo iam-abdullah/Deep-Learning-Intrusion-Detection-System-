@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDS | Deep Learning Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="brand">
+                <i class="fas fa-shield-halved"></i>
+                <span>SECURE_IDS</span>
+            </div>
+            <nav class="menu">
+                <a href="#" class="active"><i class="fas fa-chart-line"></i> Dashboard</a>
+                </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <h1>Network Traffic Analysis</h1>
+                <p>Real-time deep learning prediction</p>
+            </header>
+
+            <div class="content-grid">
+                <div class="card input-card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-network-wired"></i> Data Input</h2>
+                        <p>Paste a CSV row to analyze network traffic.</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="field-guide-container">
+                            <button class="guide-toggle" onclick="toggleGuide()">
+                                <i class="fas fa-info-circle"></i> View Required Feature Order
+                            </button>
+                            <div id="fieldGuide" class="field-guide hidden">
+                                Flow Duration, Total Fwd Packets, Total Backward Packets, Total Length of Fwd Packets, Total Length of Bwd Packets, Fwd Packet Length Max, Fwd Packet Length Min, Fwd Packet Length Mean, Fwd Packet Length Std, Bwd Packet Length Max, Bwd Packet Length Min, Bwd Packet Length Mean, Bwd Packet Length Std, Flow Bytes/s, Flow Packets/s, Flow IAT Mean, Flow IAT Std, Flow IAT Max, Flow IAT Min, Fwd IAT Total, Fwd IAT Mean, Fwd IAT Std, Fwd IAT Max, Fwd IAT Min, Bwd IAT Total, Bwd IAT Mean, Bwd IAT Std, Bwd IAT Max, Bwd IAT Min, Fwd PSH Flags, Fwd URG Flags, Fwd Header Length, Bwd Header Length, Fwd Packets/s, Bwd Packets/s, Min Packet Length, Max Packet Length, Packet Length Mean, Packet Length Std, Packet Length Variance, FIN Flag Count, SYN Flag Count, RST Flag Count, PSH Flag Count, ACK Flag Count, URG Flag Count, CWE Flag Count, ECE Flag Count, Down/Up Ratio, Average Packet Size, Avg Fwd Segment Size, Avg Bwd Segment Size, Fwd Header Length.1, Subflow Fwd Packets, Subflow Fwd Bytes, Subflow Bwd Packets, Subflow Bwd Bytes, Init_Win_bytes_forward, Init_Win_bytes_backward, act_data_pkt_fwd, min_seg_size_forward, Active Mean, Active Std, Active Max, Active Min, Idle Mean, Idle Std, Idle Max, Idle Min
+                            </div>
+                        </div>
+                        <textarea id="rowInput" placeholder="Paste your CSV row data here..."></textarea>
+                        <button id="analyzeBtn" class="primary-btn">
+                            <i class="fas fa-bolt"></i> Run Prediction
+                        </button>
+                    </div>
+                </div>
+
+                <div id="resultCard" class="card result-card hidden">
+                    <div class="card-header">
+                        <h2><i class="fas fa-poll"></i> Analysis Result</h2>
+                    </div>
+                    <div class="card-body result-body">
+                        <div id="statusIcon" class="status-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <h3 id="resLabel">Waiting for input...</h3>
+                        <p id="resConf" class="confidence-text">Confidence: -</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function toggleGuide() {
+            const guide = document.getElementById('fieldGuide');
+            guide.classList.toggle('hidden');
+        }
+
+        document.getElementById('analyzeBtn').onclick = async () => {
+            const btn = document.getElementById('analyzeBtn');
+            const rowData = document.getElementById('rowInput').value;
+            const resultCard = document.getElementById('resultCard');
+            const statusIcon = document.getElementById('statusIcon');
+            const resLabel = document.getElementById('resLabel');
+            const resConf = document.getElementById('resConf');
+
+            if (!rowData.trim()) {
+                alert("Please paste data before analyzing.");
+                return;
+            }
+
+            // UI Feedback
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            btn.disabled = true;
+            resultCard.classList.add('loading');
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ row_data: rowData })
+                });
+                
+                const data = await response.json();
+                
+                resultCard.classList.remove('hidden', 'loading');
+                resultCard.classList.remove('attack', 'benign'); // Clear previous status
+
+                if(data.status === 'success') {
+                    resLabel.innerText = data.prediction;
+                    resConf.innerText = `Confidence: ${data.confidence}`;
+                    
+                    if(data.is_attack) {
+                        resultCard.classList.add('attack');
+                        statusIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+                    } else {
+                        resultCard.classList.add('benign');
+                        statusIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+                    }
+                } else {
+                    // Handle backend error gracefully
+                    resLabel.innerText = "Error";
+                    resConf.innerText = data.message;
+                    resultCard.classList.add('error');
+                    statusIcon.innerHTML = '<i class="fas fa-times-circle"></i>';
+                }
+
+            } catch (err) {
+                alert("Error connecting to backend server.");
+            } finally {
+                btn.innerHTML = '<i class="fas fa-bolt"></i> Run Prediction';
+                btn.disabled = false;
+                resultCard.classList.remove('loading');
+            }
+        };
+    </script>
+</body>
+</html>
